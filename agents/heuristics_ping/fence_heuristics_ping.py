@@ -36,6 +36,7 @@ def ping_test(con, options):
 	good_required = int(options["--ping-good-count"])
 	maxfail = int(options["--ping-maxfail"])
 	targets = options["--ping-targets"].split(",")
+	deadcheck = options["--dead-check"] in ["", "1"]
 	exitcode = True
 	p = {}
 	failcount = 0
@@ -87,8 +88,12 @@ def ping_test(con, options):
 			failcount += 1
 			logging.error("ping target %s failed on OS level" % target)
 
-	if failcount > maxfail:
-		exitcode = False
+	if deadcheck:
+		if failcount < len(targets):
+			exitcode = False
+	else:
+		if failcount > maxfail:
+			exitcode = False
 
 	return exitcode
 
@@ -154,10 +159,19 @@ def define_new_opts():
 		"order" : 1
 		}
 
+	all_opt["dead_check"] = {
+		"getopt" : "d",
+		"longopt" : "dead-check",
+		"required" : "0",
+		"help" : "-d, --dead-check               Fencing will succeed only when all ping targets failed",
+		"shortdesc" : "Fencing will succeed only when all ping targets failed. If specified this option, ping-maxfail is ignored.",
+		"default" : "False",
+		"order" : 1
+		}
 
 def main():
 	device_opt = ["no_status", "no_password", "ping_count", "ping_good_count",
-		"ping_interval", "ping_timeout", "ping_maxfail", "ping_targets", "method"]
+		"ping_interval", "ping_timeout", "ping_maxfail", "ping_targets", "dead_check", "method"]
 	define_new_opts()
 	atexit.register(atexit_handler)
 
